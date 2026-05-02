@@ -140,3 +140,82 @@ async function fireBreakNotification(breakMin) {
     console.error("[ScreenPaws] notification failed:", e);
   }
 }
+
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  (async () => {
+    try {
+      const state = await loadState();
+      switch (msg?.type) {
+        case "GET_STATE": {
+          sendResponse({
+            phase: state.phase,
+            remainingSec: Math.round(remainingMs(state) / 1000),
+            workMin: state.workMin,
+            breakMin: state.breakMin,
+            breakEndTs: state.phase === "break"
+              ? state.phaseStartTs + phaseDurationMs(state)
+              : null
+          });
+          return;
+        }
+        case "UPDATE_SETTINGS": {
+          const next = { ...state };
+          if (typeof msg.workMin === "number") next.workMin = msg.workMin;
+          if (typeof msg.breakMin === "number") next.breakMin = msg.breakMin;
+          // If currently in the affected phase, restart it from now.
+          if ((state.phase === "working" && typeof msg.workMin === "number") ||
+              (state.phase === "break" && typeof msg.breakMin === "number")) {
+            next.phaseStartTs = Date.now();
+          }
+          await saveState(next);
+          await scheduleTransition(next);
+          sendResponse({ ok: true });
+          return;
+        }
+        case "PAUSE": {
+          if (state.phase !== "working") {
+            sendResponse({ ok: false, error: "Can only pause during working phase" });
+            return;
+          }
+          const next = {
+            ...state,
+            phase: "paused",
+            pausedRemainingMs: remainingMs(state)
+          };
+          await saveState(next);
+          await chrome.alarms.clear(ALARM_NAME);
+          sendResponse({ ok: true });
+          return;
+        }
+        case "RESUME": {
+          if (state.phase !== "paused") {
+            sendResponse({ ok: false, error: "Not paused" });
+            return;
+          }
+          const remaining = state.pausedRemainingMs ?? 0;
+          const next = {
+            ...state,
+            phase: "working",
+            phaseStartTs: Date.now() - (state.workMin * 60_000 - remaining),
+            pausedRemainingMs: null
+          };
+          await saveState(next);
+          await scheduleTransition(next);
+          sendResponse({ ok: true });
+          return;
+        }
+        case "START_BREAK_NOW": {
+          await transitionToBreak();
+          sendResponse({ ok: true });
+          return;
+        }
+        default:
+          sendResponse({ ok: false, error: "Unknown message type" });
+      }
+    } catch (e) {
+      console.error("[ScreenPaws] message handler error:", e);
+      sendResponse({ ok: false, error: String(e) });
+    }
+  })();
+  return true; // keep sendResponse async
+});
