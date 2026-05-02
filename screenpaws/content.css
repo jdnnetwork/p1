@@ -1,1 +1,37 @@
-/* ScreenPaws overlay styles — populated in Task 7 */
+.screenpaws-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  background: #1a1a1a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  user-select: none;
+  cursor: not-allowed;
+}
+
+.screenpaws-overlay__cat {
+  max-width: 60vmin;
+  max-height: 60vmin;
+  margin-bottom: 32px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.screenpaws-overlay__countdown {
+  color: #ffffff;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 64px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.screenpaws-overlay__label {
+  color: #cccccc;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 18px;
+  margin-top: 16px;
+}
