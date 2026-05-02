@@ -59,7 +59,9 @@ async function transitionToBreak() {
   };
   await saveState(next);
   await scheduleTransition(next);
-  // Broadcast + notification added in Task 5.
+  const breakEndTs = next.phaseStartTs + phaseDurationMs(next);
+  await broadcastToTabs({ type: "BREAK_START", endTs: breakEndTs });
+  await fireBreakNotification(next.breakMin);
   console.log("[ScreenPaws] -> break");
   return next;
 }
@@ -74,7 +76,7 @@ async function transitionToWorking() {
   };
   await saveState(next);
   await scheduleTransition(next);
-  // Broadcast added in Task 5.
+  await broadcastToTabs({ type: "BREAK_END" });
   console.log("[ScreenPaws] -> working");
   return next;
 }
@@ -114,3 +116,27 @@ async function init() {
 
 chrome.runtime.onStartup.addListener(init);
 chrome.runtime.onInstalled.addListener(init);
+
+async function broadcastToTabs(message) {
+  const tabs = await chrome.tabs.query({});
+  for (const tab of tabs) {
+    if (typeof tab.id !== "number") continue;
+    chrome.tabs.sendMessage(tab.id, message).catch(() => {
+      // Restricted page or no content script — expected, ignore.
+    });
+  }
+}
+
+async function fireBreakNotification(breakMin) {
+  try {
+    await chrome.notifications.create({
+      type: "basic",
+      iconUrl: chrome.runtime.getURL("assets/cat.webp"),
+      title: "휴식 시간이에요 🐱",
+      message: `${breakMin}분간 쉬어요`,
+      priority: 2
+    });
+  } catch (e) {
+    console.error("[ScreenPaws] notification failed:", e);
+  }
+}
