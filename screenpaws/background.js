@@ -85,3 +85,32 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (state.phase === "working") await transitionToBreak();
   else if (state.phase === "break") await transitionToWorking();
 });
+
+async function init() {
+  const stored = await chrome.storage.local.get(STORAGE_KEY);
+  let state = stored[STORAGE_KEY];
+
+  if (!state) {
+    // First run.
+    state = { ...DEFAULT_STATE, phaseStartTs: Date.now() };
+    await saveState(state);
+    await scheduleTransition(state);
+    console.log("[ScreenPaws] init: fresh state");
+    return;
+  }
+
+  // Recovery: did the alarm time pass while the worker was asleep?
+  if (state.phase !== "paused" && remainingMs(state) <= 0) {
+    if (state.phase === "working") await transitionToBreak();
+    else await transitionToWorking();
+    console.log("[ScreenPaws] init: recovered from missed transition");
+    return;
+  }
+
+  // Re-arm alarm in case it was lost.
+  await scheduleTransition(state);
+  console.log(`[ScreenPaws] init: resumed phase=${state.phase} remaining=${Math.round(remainingMs(state)/1000)}s`);
+}
+
+chrome.runtime.onStartup.addListener(init);
+chrome.runtime.onInstalled.addListener(init);
