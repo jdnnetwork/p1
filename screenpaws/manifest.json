@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "ScreenPaws",
+  "version": "0.1.0",
+  "description": "Forces you to take breaks with a cute cat overlay.",
+  "permissions": ["storage", "alarms", "notifications"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [{
+    "matches": ["<all_urls>"],
+    "js": ["content.js"],
+    "css": ["content.css"],
+    "run_at": "document_idle",
+    "all_frames": false
+  }],
+  "web_accessible_resources": [{
+    "resources": ["assets/cat.webp"],
+    "matches": ["<all_urls>"]
+  }]
+}
