@@ -38,3 +38,50 @@ function remainingMs(state) {
 }
 
 console.log("[ScreenPaws] background.js loaded");
+
+const ALARM_NAME = "phase-transition";
+
+async function scheduleTransition(state) {
+  await chrome.alarms.clear(ALARM_NAME);
+  if (state.phase === "paused") return;
+  const fireAt = state.phaseStartTs + phaseDurationMs(state);
+  await chrome.alarms.create(ALARM_NAME, { when: Math.max(fireAt, Date.now() + 100) });
+  console.log(`[ScreenPaws] alarm scheduled for ${new Date(fireAt).toISOString()} (phase=${state.phase})`);
+}
+
+async function transitionToBreak() {
+  const prev = await loadState();
+  const next = {
+    ...prev,
+    phase: "break",
+    phaseStartTs: Date.now(),
+    pausedRemainingMs: null
+  };
+  await saveState(next);
+  await scheduleTransition(next);
+  // Broadcast + notification added in Task 5.
+  console.log("[ScreenPaws] -> break");
+  return next;
+}
+
+async function transitionToWorking() {
+  const prev = await loadState();
+  const next = {
+    ...prev,
+    phase: "working",
+    phaseStartTs: Date.now(),
+    pausedRemainingMs: null
+  };
+  await saveState(next);
+  await scheduleTransition(next);
+  // Broadcast added in Task 5.
+  console.log("[ScreenPaws] -> working");
+  return next;
+}
+
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name !== ALARM_NAME) return;
+  const state = await loadState();
+  if (state.phase === "working") await transitionToBreak();
+  else if (state.phase === "break") await transitionToWorking();
+});
