@@ -87,3 +87,16 @@ chrome.runtime.onMessage.addListener((msg) => {
 });
 
 console.log("[ScreenPaws] content.js loaded on", location.href);
+
+// On load, ask background for current state — if a break is in progress,
+// render the overlay immediately (handles tabs opened during break).
+(async () => {
+  try {
+    const state = await chrome.runtime.sendMessage({ type: "GET_STATE" });
+    if (state?.phase === "break" && typeof state.breakEndTs === "number") {
+      showOverlay(state.breakEndTs);
+    }
+  } catch (e) {
+    // Background not ready or extension reloaded; no recovery needed.
+  }
+})();
