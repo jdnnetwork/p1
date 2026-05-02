@@ -1,3 +1,46 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><link rel="stylesheet" href="popup.css"></head>
-<body><p>ScreenPaws</p><script src="popup.js"></script></body></html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="sp-header">
+    <h1>ScreenPaws</h1>
+  </header>
+
+  <section class="sp-status">
+    <div class="sp-phase" id="phaseLabel">—</div>
+    <div class="sp-remaining" id="remainingLabel">--:--</div>
+  </section>
+
+  <section class="sp-settings">
+    <label class="sp-field">
+      <span>사용 시간</span>
+      <select id="workSelect">
+        <option value="10">10분</option>
+        <option value="30">30분</option>
+        <option value="60" selected>60분</option>
+        <option value="90">90분</option>
+        <option value="120">120분</option>
+      </select>
+    </label>
+
+    <label class="sp-field">
+      <span>휴식 시간</span>
+      <select id="breakSelect">
+        <option value="3">3분</option>
+        <option value="5" selected>5분</option>
+        <option value="10">10분</option>
+      </select>
+    </label>
+  </section>
+
+  <section class="sp-actions">
+    <button id="pauseResumeBtn" type="button">일시정지</button>
+    <button id="breakNowBtn" type="button">즉시 휴식</button>
+  </section>
+
+  <script src="popup.js"></script>
+</body>
+</html>
